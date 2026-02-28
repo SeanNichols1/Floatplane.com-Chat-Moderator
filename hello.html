@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Hello - Controls</title>
+    <style>
+      html {background-color:#18181B; color: #FFFFFF;}
+      .controls { display:flex; gap:8px; }
+      button { padding:8px 12px; cursor:pointer; }
+      button.toggle-active { background:#0366d6; color:#fff; border:0; }
+      .list { margin-top:12px; max-width:480px; }
+      .list ul {padding-left: 20px;}
+      .list li {padding-top: 20px;}
+      .list button, .reload-control button {padding:1px 1px; }
+      .input-row { display:flex; gap:8px; margin-top:8px; }
+      .note { color:#555; font-size:1rem; margin-top:8px; }
+      .status { color:#c00; font-size:1rem; margin-top:8px; }
+
+      /* small reload control in top-right */
+      .reload-control {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        background: transparent;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Floatplane.com </h1>
+    <h2>Chat Moderation</h2>
+
+    <!-- Staff messagges only button -->
+    <div class="controls" aria-label="staff filter">
+      <button id="btnStaffToggle" aria-pressed="false">Staff Messages Only: Off</button>
+    </div>
+
+    <!-- Shows red text if there is no staff messages to show -->
+    <div id="statusNote" class="status" aria-live="polite"></div>
+
+    <!-- The block list to hide annoying people in chat-->
+    <section class="list" aria-labelledby="blockHeading">
+        <h2 id="blockHeading">User Block List &#127850;</h2> <!-- Cookie emoji -->
+
+      <div class="input-row">
+        <input id="blockInput" type="text" placeholder="Add block string" aria-label="block input" />
+        <button id="btnAddBlock">Add</button>
+        <button id="btnClearBlock">Clear List</button>
+      </div>
+      <ul id="blockList" aria-live="polite"></ul>
+    </section>
+    <br />
+    <div class="reload-control" aria-hidden="false">
+       <span>Not working?</span>
+       <button id="btnReload">Reload</button>
+    </div>
+    <script src="controls.js"></script>
+  </body>
+</html>
