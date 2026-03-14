@@ -158,7 +158,7 @@
           const exists = hasStaffMessages();
           if (!exists && typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
             try {
-              const reason = "No staff messages present; staff filter reverted to Off.";
+              const reason = "No staff messages present.";
               // write both flag and human-readable reason so the popup can show it
               chrome.storage.local.set({ staff_filter_on: false, staff_filter_message: reason });
             } catch (e) {
@@ -220,7 +220,7 @@
     if (lastStaffFilter && !hasStaffMessages()) {
       if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
         try {
-          const reason = "No staff messages present; staff filter reverted to Off.";
+          const reason = "No staff messages present.";
           chrome.storage.local.set({ staff_filter_on: false, staff_filter_message: reason });
           // we'll return early; storage.onChanged listener will call applyBlockListAndFilter again
           return;
