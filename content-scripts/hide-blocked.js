@@ -200,6 +200,9 @@
   let currentObserver = null;
   let lastBlockSet = new Set();
   let lastStaffFilter = false;
+  // Start active; the background script will send tabDeactivated if this tab is in the background.
+  let isTabActive = true;
+  let setupComplete = false;
 
   async function applyBlockListAndFilter() {
     const [list, staffFlag] = await Promise.all([getBlockList(), getStaffFilter()]);
@@ -241,10 +244,34 @@
     currentObserver = observeNewMessages(normalizedSet, lastStaffFilter);
   }
 
+  // Listen for activate/deactivate messages from the background service worker
+  if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener((message) => {
+      if (message && message.type === "tabDeactivated") {
+        isTabActive = false;
+        // Disconnect the observer to stop processing mutations on background tabs
+        if (currentObserver) {
+          currentObserver.disconnect();
+          currentObserver = null;
+        }
+      } else if (message && message.type === "tabActivated") {
+        isTabActive = true;
+        // If initial setup never completed (tab was inactive while page was loading), retry it now
+        if (!setupComplete) {
+          attempt = 0;
+          trySetup();
+        } else {
+          // Re-apply filtering now that this tab is active again
+          applyBlockListAndFilter();
+        }
+      }
+    });
+  }
+
   // Listen for storage changes to update quickly when popup modifies block_list or staff_filter_on
   if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area === "local" && (changes.block_list || changes.staff_filter_on)) {
+      if (area === "local" && (changes.block_list || changes.staff_filter_on) && isTabActive) {
         applyBlockListAndFilter();
       }
     });
@@ -257,8 +284,9 @@
     attempt++;
     const wrapper = document.querySelector(".live-chat-wrapper");
     if (wrapper) {
+      setupComplete = true;
       await applyBlockListAndFilter();
-    } else if (attempt < maxAttempts) {
+    } else if (attempt < maxAttempts && isTabActive) {
       setTimeout(trySetup, 500);
     }
   };
