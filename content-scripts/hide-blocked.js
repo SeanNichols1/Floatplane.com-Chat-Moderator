@@ -202,8 +202,9 @@
   let lastBlockSet = new Set();
   let lastStaffFilter = false;
 
-  // Tab active state - default true so filtering works immediately on the active tab
-  let isTabActive = true;
+  // Default false: the background script sends tabActivated to whichever tab is currently focused.
+  // This prevents all tabs from reacting to popup changes simultaneously.
+  let isTabActive = false;
   // Track whether initial setup (finding .live-chat-wrapper) has completed
   let setupComplete = false;
 
