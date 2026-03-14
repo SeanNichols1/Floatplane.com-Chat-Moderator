@@ -6,11 +6,36 @@ function isFloatplaneUrl(url) {
   return url && url.includes('floatplane.com');
 }
 
+/**
+ * Send a message to a tab, retrying up to maxRetries times with retryDelayMs between
+ * attempts if the content script isn't ready yet (i.e. "Could not establish connection"
+ * / "Receiving end does not exist" errors). This handles the race where onActivated fires
+ * before the content script has registered its chrome.runtime.onMessage listener.
+ */
+function sendMsgWithRetry(tabId, type, maxRetries = 5, retryDelayMs = 300) {
+  let attempts = 0;
+  function attempt() {
+    attempts++;
+    chrome.tabs.sendMessage(tabId, { type }, (response) => {
+      if (chrome.runtime.lastError) {
+        const msg = chrome.runtime.lastError.message || "";
+        // Only retry on "no receiving end" errors (content script not ready yet)
+        const isNotReady =
+          msg.includes("Could not establish connection") ||
+          msg.includes("Receiving end does not exist");
+        if (isNotReady && attempts < maxRetries) {
+          setTimeout(attempt, retryDelayMs);
+        }
+        // Any other error (e.g. tab closed) – silently ignore
+      }
+    });
+  }
+  attempt();
+}
+
 function sendMsg(tabId, type) {
-  chrome.tabs.sendMessage(tabId, { type }, () => {
-    // Suppress "no receiving end" errors for tabs that don't have the content script
-    void chrome.runtime.lastError;
-  });
+  // For deactivation messages we don't need retries – if the tab isn't listening it doesn't matter.
+  chrome.tabs.sendMessage(tabId, { type }, () => { void chrome.runtime.lastError; });
 }
 
 function activateTab(tabId) {
@@ -18,7 +43,8 @@ function activateTab(tabId) {
     sendMsg(activeFloatplaneTabId, "tabDeactivated");
   }
   activeFloatplaneTabId = tabId;
-  sendMsg(tabId, "tabActivated");
+  // Use retry logic so the message lands even if the content script is still initialising.
+  sendMsgWithRetry(tabId, "tabActivated");
 }
 
 function deactivateCurrentTab() {
